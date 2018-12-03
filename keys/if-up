@@ -1,0 +1,18 @@
+#!/bin/sh
+# ip link set $IFNAME address $MAC mtu $MTU up
+ip link set $IFNAME mtu $MTU up
+
+[ $NODENAME = dl  ] &&    ip addr add 172.16.111.1 dev $IFNAME
+[ $NODENAME = bj ] &&     ip addr add 172.16.111.2 dev $IFNAME
+[ $NODENAME = pc ] &&     ip addr add 172.16.111.3 dev $IFNAME
+[ $NODENAME = vps ] &&    ip addr add 172.16.111.4 dev $IFNAME
+[ $NODENAME = asus ] &&   ip addr add 172.16.111.5 dev $IFNAME
+[ $NODENAME = laptop ] && ip addr add 172.16.111.6 dev $IFNAME
+ip route add 172.16.111.0/24 dev $IFNAME
+# iptables -t nat -A POSTROUTING -j MASQUERADE
+# iptables -t nat -D POSTROUTING -s 10.0.1.0/24 -j MASQUERADE
+# iptables -t nat -A POSTROUTING -s 10.0.1.0/24 -j MASQUERADE
+
+# Creating tun device.
+# ip tuntap del $IFNAME mode tun
+# ip tuntap add $IFNAME mode tun

@@ -1,0 +1,9 @@
+EXE=sl2switch
+DIRS=. src base
+CFLAGS+=-DHAVE_TLS -DHAVE_EPOLL 
+LIBFLAGS+= -L ../deps/openssl-1.1.0f/ -lssl -lcrypto -ldl -lpthread
+#LIBFLAGS+=`pkg-config --libs libssl` `pkg-config --libs libcrypto`
+LDFLAGS+=#-static -Wl,-Bstatic -libc -Wl,-Bdynamic
+INC_PATH+=-I./src -I./base -I../deps/openssl-1.1.0f/include/
+LIB_PATH+=
+# build openssl ./config --prefix=`pwd` no-shared
