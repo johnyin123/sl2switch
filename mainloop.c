@@ -182,7 +182,8 @@ static int tun_reader(ev_event_t *ev)
         return EXIT_SUCCESS;
     smac = mac_src(&vpkt.ethpkt);
     dmac = mac_dst(&vpkt.ethpkt);
-    if(dmac == BROADCAST_MAC)
+    //if(dmac == BROADCAST_MAC)
+    if(is_multi_broadcast(dmac))
         broadcast_peers(cfg, &vpkt);
     else if(smac == myself)
         send_peer(cfg, &vpkt, dmac);
