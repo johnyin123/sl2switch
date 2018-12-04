@@ -18,13 +18,13 @@ static int mk_select_create(ev_loop_t *loop)
         ev_inner_log(ERROR, "loop size large than FD_SETSIZE(%d)", FD_SETSIZE);
         return EXIT_FAILURE;
     }
-    loop->io = calloc(loop->size, sizeof(struct pri_fds_t));
+    loop->io = mem_calloc(loop->size, sizeof(struct pri_fds_t));
     return EXIT_SUCCESS;
 }
 static int mk_select_destroy(ev_loop_t *loop)
 {
     struct pri_fds_t *fds = loop->io;
-    free(fds);
+    mem_free(fds);
     return EXIT_SUCCESS;
 }
 static int mk_select_add(ev_loop_t *loop, ev_event_t *ev, int events)
