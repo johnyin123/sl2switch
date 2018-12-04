@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <assert.h>
 
-static int async_close(connection_t *c);
 #ifdef HAVE_TLS
 #include <openssl/err.h>
 static void dump_cert(FILE *fp, X509 *cert)
@@ -124,6 +123,7 @@ void set_tls_ctx(connection_t *c, SSL_CTX *tls_ctx)
 int tls_handshake(connection_t *c)
 {
     int rv, ssl_err;
+    ERR_clear_error();
     if ((rv = SSL_do_handshake(c->tls)) != 1)
     {
         ssl_err = SSL_get_error(c->tls, rv);
@@ -136,7 +136,7 @@ int tls_handshake(connection_t *c)
     }
     else
     {
-        c->accept = 1;
+        c->handshaked = 1;
         sock_inner_log(DEBUG, "handshake(%d) OK", c->sock);
     }
     return EXIT_SUCCESS;

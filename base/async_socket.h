@@ -44,7 +44,7 @@ typedef struct connection_t
 #ifdef HAVE_TLS
     SSL_CTX *tls_ctx;
     SSL *tls;
-    int accept:1;
+    int handshaked:1;
 #endif
     void *ctx;
 } connection_t;

@@ -48,9 +48,10 @@ static int _load_conf(conf_t *conf, int argc, char *argv[])
         {"ca", required_argument, NULL, 'C'},
         {"cert", required_argument, NULL, 'c'},
         {"key", required_argument, NULL, 'k'},
+        {"interval", required_argument, NULL, 't'},
         {0, 0, 0, 0},
     };
-    const char *optstring = "h?v+p:d:n:s:C:c:k:";
+    const char *optstring = "h?v+p:d:n:s:C:c:k:t:";
     for (;;)
     {
         int idx = 1;
@@ -61,7 +62,7 @@ static int _load_conf(conf_t *conf, int argc, char *argv[])
         {
         case 'h':
         case '?':
-            printf("Usage: %s [-h?vpdnsCck] [connect to peers]\n" "          \n\n", argv[0]);
+            printf("Usage: %s [-h?vpdnsCckt] [connect to peers]\n" "          \n\n", argv[0]);
 
             printf("Options:\n");
             printf("  -?, -h, --help    show this help screen\n");
@@ -81,6 +82,8 @@ static int _load_conf(conf_t *conf, int argc, char *argv[])
             printf("                    default: %s\n", "cert");
             printf("  -k, --key         the the client key file to use\n");
             printf("                    default: %s\n", "key");
+            printf("  -t, --interval    time interval(msec)\n");
+            printf("                    default: %lu\n", conf->timer_tick);
             _destroy_conf(conf);
             exit(EXIT_SUCCESS);
 
@@ -108,6 +111,9 @@ static int _load_conf(conf_t *conf, int argc, char *argv[])
             break;
         case 'k':
             strcpy(conf->key, optarg);
+            break;
+        case 't':
+            conf->timer_tick = atoi(optarg);
             break;
         default:
             _destroy_conf(conf);

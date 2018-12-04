@@ -11,11 +11,11 @@ static int client_writer(ev_event_t *ev)
     conf_t *cfg = AsyncSocket.get_ctx(c);
     //tundev_t *tdev = cfg->tdev;
 #ifdef HAVE_TLS
-    if(!c->accept)
+    if(!c->handshaked)
     {
         if(EXIT_SUCCESS != tls_handshake(c))
             return EXIT_FAILURE;
-        if(c->accept)
+        if(c->handshaked)
             dump_peer(stderr, c);
     }
     else
@@ -47,11 +47,11 @@ static int client_reader(ev_event_t *ev)
     tundev_t *tdev = &cfg->tdev;
 
 #ifdef HAVE_TLS
-    if(!c->accept)
+    if(!c->handshaked)
     {
         if(EXIT_SUCCESS != tls_handshake(c))
             return EXIT_FAILURE;
-        if(c->accept)
+        if(c->handshaked)
             dump_peer(stderr, c);
     }
 #endif
@@ -119,7 +119,7 @@ static void broadcast_peers(conf_t *cfg, l2switch_pkt_t *vpkt)
     list_for_each_entry(peer, &cfg->peers.link, link)
     {
 #ifdef HAVE_TLS
-        if(!peer->c.accept)
+        if(!peer->c.handshaked)
             continue;
 #endif
         nsend = 0;
@@ -150,7 +150,7 @@ static void send_peer(conf_t *cfg, l2switch_pkt_t *vpkt, uint64_t mac)
         if(peer->mac != mac)
             continue;
 #ifdef HAVE_TLS
-        if(!peer->c.accept)
+        if(!peer->c.handshaked)
             return;
 #endif
         nsend = 0;

@@ -6,17 +6,7 @@
 extern ev_impl_t epoll_func;
 #define impl_func  epoll_func
 #else
-#error  not impl!!!!!!!
-ev_impl_t select_func =
-{
-    .type    = "SELECT",
-    .create  = NULL,
-    .destroy = NULL,
-    .add     = NULL,
-    .change  = NULL,
-    .del     = NULL,
-    .poll    = NULL,
-};
+extern ev_impl_t select_func;
 #define impl_func  select_func
 #endif
 

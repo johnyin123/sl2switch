@@ -43,7 +43,7 @@ static void _dumppeers(FILE *fp, peer_t *peers)
         {
             fprintf(fp, " [EST");
 #ifdef HAVE_TLS
-            fprintf(fp, "%s", peer->c.accept ? "(SSL OK)" : "(SSL NEGO)");
+            fprintf(fp, "%s", peer->c.handshaked ? "(SSL OK)" : "(SSL NEGO)");
 #endif
             fprintf(fp, "]\n");
         }
