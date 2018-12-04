@@ -30,9 +30,7 @@ static int mk_epoll_destroy(ev_loop_t *loop)
 static int mk_epoll_add(ev_loop_t *loop, ev_event_t *ev, int events)
 {
     int ret;
-    struct epoll_event event;
-    event.events = _INIT_EVAL;
-    event.data.ptr = ev;
+    struct epoll_event event = { .events = _INIT_EVAL, .data.ptr = ev, };
     switch (events)
     {
     case EVENT_READ:
@@ -55,9 +53,7 @@ static int mk_epoll_add(ev_loop_t *loop, ev_event_t *ev, int events)
 }
 static int mk_epoll_change(ev_loop_t *loop, ev_event_t *ev, int events)
 {
-    struct epoll_event event;
-    event.events = _INIT_EVAL;
-    event.data.ptr = ev;
+    struct epoll_event event = { .events = _INIT_EVAL, .data.ptr = ev, };
     switch (events)
     {
     case EVENT_READ:
