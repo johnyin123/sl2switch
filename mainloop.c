@@ -16,7 +16,10 @@ static int client_writer(ev_event_t *ev)
         if(EXIT_SUCCESS != tls_handshake(c))
             return EXIT_FAILURE;
         if(c->handshaked)
-            dump_peer(stderr, c);
+        {
+            inner_log(INFO, "SSL handshake OK %s(%X:%d) %d", peer->nodename, getpeer_ip(peer), getpeer_port(peer), AsyncSocket.getfd(&peer->c));
+            //dump_peer(stderr, c);
+        }
     }
     else
 #endif
@@ -52,7 +55,10 @@ static int client_reader(ev_event_t *ev)
         if(EXIT_SUCCESS != tls_handshake(c))
             return EXIT_FAILURE;
         if(c->handshaked)
-            dump_peer(stderr, c);
+        {
+            inner_log(INFO, "SSL handshake OK %s(%X:%d) %d", peer->nodename, getpeer_ip(peer), getpeer_port(peer), AsyncSocket.getfd(&peer->c));
+            //dump_peer(stderr, c);
+        }
     }
 #endif
     while(1)
@@ -202,6 +208,10 @@ static int accept_reader(ev_event_t *ev)
     if (AsyncSocket.accept(srv, c) == EXIT_SUCCESS)
     {
         /*add cfg in client socket private data*/
+        if(0 != settcpnodelay(AsyncSocket.getfd(c)))
+        {
+            inner_log(ERROR, "incoming set_nodelay error(%d) %s", errno, strerror(errno));
+        }
         AsyncSocket.set_ctx(c, cfg);
         if(Peer.addpeer(&cfg->event_loop, &cfg->peers, "incoming", peer, client_reader, NULL, client_error, EVENT_READ) == EXIT_SUCCESS)
         {
@@ -249,6 +259,10 @@ static int l2switch_timer(ev_event_t *ev)
                 if (AsyncSocket.connect(c, int2ip(out->ipaddr, ipaddr), out->port) == EXIT_SUCCESS)
                 {
                     /*add cfg in client socket private data*/
+                    if(0 != settcpnodelay(AsyncSocket.getfd(c)))
+                    {
+                        inner_log(ERROR, "incoming set_nodelay error(%d) %s", errno, strerror(errno));
+                    }
                     AsyncSocket.set_ctx(c, cfg);
                     if(Peer.addpeer(&cfg->event_loop, &cfg->peers, "outgoing", peer, client_reader, client_writer, client_error, EVENT_RW) == EXIT_SUCCESS)
                     {

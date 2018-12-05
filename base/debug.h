@@ -1,7 +1,7 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#define MEM_DEBUG 1
+//#define MEM_DEBUG 1
 #define TUN_DEBUG 1
 #define EVENT_DEBUG 1
 #define SOCK_DEBUG 1

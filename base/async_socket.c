@@ -12,71 +12,6 @@
 
 #ifdef HAVE_TLS
 #include <openssl/err.h>
-static void dump_cert(FILE *fp, X509 *cert)
-{
-    char *line;
-    if (cert != NULL)
-    {
-        fprintf(fp, "数字证书信息:\n");
-        line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-        fprintf(fp, "证书: %s\n", line);
-        OPENSSL_free(line);
-        line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-        fprintf(fp, "颁发者: %s\n", line);
-        OPENSSL_free(line);
-        X509_free(cert);
-    }
-    else
-        fprintf(fp, "无证书信息！\n");
-}
-void dump_peer(FILE *fp, connection_t *c)
-{
-    dump_cert(fp, SSL_get_peer_certificate(c->tls));
-    dump_cert(fp, SSL_get_certificate(c->tls));
-}
-/*
-   FILE *fp = fopen(pkfile, "r");
-   X509 *cert = PEM_read_X509(fp, NULL, NULL, NULL);
-   time_t tcheck=time(NULL);
-   if (X509_cmp_time(X509_get_notAfter(x509), &tcheck) < 0) {
-   printf("%s\n", "expire!");
-
-   X509 *cert = SSL_get_peer_certificate(c->tls);
-   X509_free(cert);
-*/
-int getpubkey(X509 *cert, unsigned char *buf, int len)
-{
-    int pkeyLen;
-    EVP_PKEY *pkey = X509_get_pubkey(cert);
-    if(pkey == NULL)
-        return -1;
-    pkeyLen = i2d_PublicKey(pkey, NULL);
-    if((buf != NULL) && (len >= pkeyLen))
-    {
-        i2d_PublicKey(pkey, &buf);
-    }
-    EVP_PKEY_free(pkey);
-    return pkeyLen;
-}
-static int verify_callback(int ok, X509_STORE_CTX *ctx)
-{
-    X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
-    time_t tcheck=time(NULL);
-    if(cert)
-    {
-        if (X509_cmp_time(X509_get_notAfter(cert), &tcheck) < 0)
-        {
-            fprintf(stderr, "expire!");
-            return 0;
-        }
-        //dump_cert(stderr, cert);
-        //int err = X509_STORE_CTX_get_error(ctx);
-        //int depth = X509_STORE_CTX_get_error_depth(ctx);
-        //SSL *ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
-        //X509 *cert = SSL_get_certificate(ssl)
-    }
-    return ok;
-}
 SSL_CTX *tls_ctx_init()
 {
     SSL_library_init();
@@ -86,10 +21,9 @@ SSL_CTX *tls_ctx_init()
     {
         /* const char cipher_list[] = "ALL:!EXPORT:!LOW:!MEDIUM:!ADH:!MD5";
          * SSL_CTX_set_cipher_list(ctx, cipher_list);
-         * add this will SIGSEGV
          */
         SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
-        SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, verify_callback);
+        SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, NULL);
         /* We accept only certificates signed only by the CA himself */
         SSL_CTX_set_verify_depth(ctx, 1);
         SSL_CTX_set_read_ahead(ctx, 1);
@@ -129,8 +63,7 @@ int tls_handshake(connection_t *c)
         ssl_err = SSL_get_error(c->tls, rv);
         if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE)
         {
-            sock_inner_log(INFO, "handshake(%d) ssl_err is: %d, rv=%d, closed", c->sock, ssl_err, rv);
-            ERR_print_errors_fp(stderr);
+            sock_inner_log(ERROR, "handshake(%d) ssl_err is: %d, rv=%d, closed", c->sock, ssl_err, rv);
             return EXIT_FAILURE;
         }
     }
@@ -359,6 +292,7 @@ static int async_accept(connection_t *srv, connection_t *c)
             continue;
         return EXIT_FAILURE;
     }
+    setnonblocking(c->sock);
     c->in_addr = in_addr;
     c->in_len = in_len;
 #ifdef HAVE_TLS
@@ -372,7 +306,7 @@ static int async_accept(connection_t *srv, connection_t *c)
         }
     }
 #endif
-    return setnonblocking(c->sock);
+    return EXIT_SUCCESS;
 }
 
 static void netaddr_set(const char *name, struct sockaddr_in *addr)
