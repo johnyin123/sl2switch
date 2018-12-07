@@ -199,7 +199,7 @@ static void *mmap_calloc(void *map, size_t size)
 static void mmap_free(void *map, void *ptr)
 {
     mem_t *mem = (mem_t *) map;
-    data_t *data;
+    data_t *data = NULL;
     while (mem != NULL)
     {
         if ((data = get_mmap_data_from_ptr((void *)mem, ptr)) != NULL)

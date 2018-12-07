@@ -93,7 +93,7 @@ bool valid_digit(const char *str)
 #include <regex.h>
 int regex_chk(const char *str, const char *pattern)
 {
-    int z; //status
+    int i, z; //status
     int cflags = 0; //compile flags
     regex_t reg; //compiled regular expression
     char ebuf[128]; //error buffer
@@ -127,7 +127,7 @@ int regex_chk(const char *str, const char *pattern)
      * str+pm[1].rm_so到str+pm[1].rm_eo是第二个匹配的子串
      * ....
      */
-    for(int i=0; i<1000000; i++)
+    for(i=0; i<1000000; i++)
         z = regexec(&reg, str, nmatch, pm, 0);
 
     if(z == REG_NOMATCH)
