@@ -8,8 +8,8 @@
 
 static void _destroy_conf(conf_t *conf)
 {
-    outgoing_t *out;
-    list_for_each_entry(out, &conf->outgoing.link, link)
+    outgoing_t *out, *tmp_out;
+    list_for_each_safe(out, tmp_out, &conf->outgoing.link, link)
     {
         list_remove(&out->link);
         mem_free(out);
@@ -145,7 +145,7 @@ static void _dump(conf_t * v)
     int cnt;
     char ipaddr[20];
     struct in_addr s;
-    outgoing_t *out;
+    outgoing_t *out, *tmp_out;
     fprintf(stderr, "configuration: \n");
     fprintf(stderr, "      port      =  %d\n", v->port);
     fprintf(stderr, "      maxfds    =  %d\n", v->maxfds);
@@ -157,7 +157,7 @@ static void _dump(conf_t * v)
     fprintf(stderr, "      key       =  %s\n", v->key);
     fprintf(stderr, "      log_level =  %d\n", log_level);
     cnt = 0;
-    list_for_each_entry(out, &v->outgoing.link, link)
+    list_for_each_safe(out, tmp_out, &v->outgoing.link, link)
     {
         cnt++;
         s.s_addr = out->ipaddr;

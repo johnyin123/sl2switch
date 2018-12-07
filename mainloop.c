@@ -33,7 +33,6 @@ static int client_error(ev_event_t *ev)
     connection_t *c = &peer->c;
     conf_t *cfg = AsyncSocket.get_ctx(c);
     /* delete peer from list */
-    AsyncSocket.close(c);
     Peer.delpeer(&cfg->event_loop, peer);
     mem_free(peer);
     return EXIT_SUCCESS;
@@ -119,10 +118,10 @@ static int recv_pkt(tundev_t *tdev, l2switch_pkt_t *vpkt)
 static void broadcast_peers(conf_t *cfg, l2switch_pkt_t *vpkt)
 {
     int nsend, len;
-    peer_t *peer;
+    peer_t *peer, *tmp;
     const char *buf  = (const char *)vpkt;
     int needsend = vpkt->hdr.len + MVPN_HDR_LEN;
-    list_for_each_entry(peer, &cfg->peers.link, link)
+    list_for_each_safe(peer, tmp, &cfg->peers.link, link)
     {
 #ifdef HAVE_TLS
         if(!peer->c.handshaked)
@@ -148,10 +147,10 @@ static void broadcast_peers(conf_t *cfg, l2switch_pkt_t *vpkt)
 static void send_peer(conf_t *cfg, l2switch_pkt_t *vpkt, uint64_t mac)
 {
     int nsend, len;
-    peer_t *peer;
+    peer_t *peer, *tmp;
     const char *buf  = (const char *)vpkt;
     int needsend = vpkt->hdr.len + MVPN_HDR_LEN;
-    list_for_each_entry(peer, &cfg->peers.link, link)
+    list_for_each_safe(peer, tmp, &cfg->peers.link, link)
     {
         if(peer->mac != mac)
             continue;
@@ -218,7 +217,8 @@ static int accept_reader(ev_event_t *ev)
             return EXIT_SUCCESS;
         }
     }
-    AsyncSocket.close(c);
+    /* delete peer from list */
+    Peer.delpeer(&cfg->event_loop, peer);
     mem_free(peer);
     return EXIT_FAILURE;
 }
@@ -232,13 +232,13 @@ static int l2switch_timer(ev_event_t *ev)
 {
     bool found;
     char ipaddr[20];
-    outgoing_t *out;
-    peer_t *peer;
+    outgoing_t *out, *tmp_out;
+    peer_t *peer, *tmp;
     conf_t *cfg = Event.ev_get_ctx(ev);
-    list_for_each_entry(out, &cfg->outgoing.link, link)
+    list_for_each_safe(out, tmp_out, &cfg->outgoing.link, link)
     {
         found = false;
-        list_for_each_entry(peer, &cfg->peers.link, link)
+        list_for_each_safe(peer, tmp, &cfg->peers.link, link)
         {
             /* only on connecton to peer!incoming or outgoing */
             if((getpeer_ip(peer) == out->ipaddr) && (out->port == getpeer_port(peer)))
@@ -269,7 +269,8 @@ static int l2switch_timer(ev_event_t *ev)
                         continue;
                     }
                 }
-                AsyncSocket.close(c);
+                /* delete peer from list */
+                Peer.delpeer(&cfg->event_loop, peer);
                 mem_free(peer);
             }
         }
@@ -300,7 +301,7 @@ static void del_ev(conf_t *cfg, ev_event_t *ev)
 }
 void mainloop(conf_t *cfg)
 {
-    peer_t *peer;
+    peer_t *peer, *tmp;
     ev_event_t timer_ev, *srv_ev, *tun_ev;
     if(Event.ev_timer_add(&cfg->event_loop, &timer_ev, 3000, l2switch_timer, cfg) == EXIT_FAILURE)
     {
@@ -312,9 +313,8 @@ void mainloop(conf_t *cfg)
         return;
     Event.loop_cycle(&cfg->event_loop, 5000);
     Event.ev_timer_del(&cfg->event_loop, &timer_ev);
-    list_for_each_entry(peer, &cfg->peers.link, link)
+    list_for_each_safe(peer, tmp, &cfg->peers.link, link)
     {
-        AsyncSocket.close(&peer->c);
         Peer.delpeer(&cfg->event_loop, peer);
         mem_free(peer);
     }

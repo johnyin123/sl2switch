@@ -56,21 +56,40 @@ static inline void list_remove(list_t * link)
     for (pos = list_head(list, typeof(*pos), member);    \
          &pos->member != (list);                \
          pos = list_next(pos, member))
+
+#define list_for_each_safe(pos, n, head, member) \
+    for (pos = list_head(head, typeof(*pos), member), n = list_next(pos, member); \
+        &pos->member != (head); \
+        pos = n, n = list_next(pos, member))
+
 /*
 void testcase()
 {
-    typedef struct tracker_t
+    typedef struct test_list_t
     {
-        char *tracker;
+        int val;
         list_t link;
-    }tracker_t;
-    tracert_t tracert;
-    list_init(&(tracert.link));
-    tracert_t *ptracker = malloc(sizeof(tracert_t));
-    list_append(&(tracert.link), &ptracker->link);
-    list_for_each_entry(ptracker, &tracert.link, link)
+        int val2;
+    }test_list_t;
+    int i;
+    test_list_t header;
+    list_init(&header.link);
+    test_list_t *anode, *tmp;
+    for(i=0;i<100;i++)
     {
-        printf("                %s\n", ptracker->tracker);
+       anode = malloc(sizeof(test_list_t));
+       anode->val = i+1;
+       list_append(&header.link, &anode->link);
+    }
+
+    list_for_each_entry(anode, &header.link, link) {
+        printf("item %d\n", anode->val);
+    }
+
+    list_for_each_safe(anode, tmp, &header.link, link) {
+        printf("freeing item %d\n", anode->val);
+        list_remove(&anode->link);
+        free(anode);
     }
 }
 */

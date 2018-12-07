@@ -143,38 +143,13 @@ int regex_chk(const char *str, const char *pattern)
 }
 
 /* return 1 if IP string is valid, else return 0 */
-#if 0
 bool is_valid_ip(const char *ip_str)
 {
     struct sockaddr_in sa;
     int result = inet_pton(AF_INET, ip_str, &(sa.sin_addr));
     return result != 0;
 }
-#endif
-bool is_valid_ip(const char *ip_str)
-{
-    regex_t regex;
-    int rv;
-    /* Compile regular expression */
-#define IP_REGEX "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
-#define HOSTNAME_REGEX "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
 
-    rv = regcomp(&regex, IP_REGEX, REG_EXTENDED);
-    if (rv)
-    {
-        fprintf(stderr, "Could not compile regex\n");
-        return false;
-    }
-    rv = regexec(&regex, ip_str, 0, NULL, 0);
-    //char msgbuf[100];
-    //regerror(rv, &regex, msgbuf, sizeof(msgbuf));
-    //fprintf(stderr, "Regex match failed: %s\n", msgbuf);
-    if( rv == REG_NOMATCH )
-    {
-        return false;
-    }
-    return true;
-}
 #include <ctype.h>
 #include <stdarg.h>
 

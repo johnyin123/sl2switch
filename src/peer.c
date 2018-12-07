@@ -5,6 +5,7 @@ static void _removepeer(ev_loop_t *evloop, peer_t *peer)
     inner_log(INFO, "delpeer %s(%X:%d) %d", peer->nodename, getpeer_ip(peer), getpeer_port(peer), AsyncSocket.getfd(&peer->c));
     Event.ev_del(evloop, &peer->ev);
     Event.ev_final(&peer->ev);
+    AsyncSocket.close(&peer->c);
     list_remove(&peer->link);
     return;
 }
@@ -12,6 +13,7 @@ static int _addpeer(ev_loop_t *evloop, peer_t *peer_header, const char *nodename
 {
     assert(peer);
     strncpy(peer->nodename, nodename, MAXHOSTNAMELEN);
+    peer->mac = 0;
     peer->last_seen = 0;//time(NULL);
     inner_log(INFO, "addpeer %s(%X:%d) %d", peer->nodename, getpeer_ip(peer), getpeer_port(peer), AsyncSocket.getfd(&peer->c));
     /*client socket(accepted, connect out), use peer as ctx */
@@ -31,10 +33,10 @@ static void _dumppeers(FILE *fp, peer_t *peers)
 {
     struct in_addr s;
     char ipaddr[20];
-    peer_t *peer;
+    peer_t *peer, *tmp;
     int cnt = 0;
     fprintf(fp, "-----------------------------------------\n");
-    list_for_each_entry(peer, &peers->link, link)
+    list_for_each_safe(peer, tmp, &peers->link, link)
     {
         cnt++;
         s.s_addr = getpeer_ip(peer);
