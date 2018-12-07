@@ -4,28 +4,6 @@
 
 #define myself        (Tun.getmac(tdev))
 /*******cli**********************************/
-static int client_writer(ev_event_t *ev)
-{
-    peer_t *peer = Event.ev_get_ctx(ev);
-    connection_t *c = &peer->c;
-    conf_t *cfg = AsyncSocket.get_ctx(c);
-    //tundev_t *tdev = cfg->tdev;
-#ifdef HAVE_TLS
-    if(!c->handshaked)
-    {
-        if(EXIT_SUCCESS != tls_handshake(c))
-            return EXIT_FAILURE;
-        if(c->handshaked)
-        {
-            inner_log(INFO, "SSL handshake OK %s(%X:%d) %d", peer->nodename, getpeer_ip(peer), getpeer_port(peer), AsyncSocket.getfd(&peer->c));
-            //dump_peer(stderr, c);
-        }
-    }
-    else
-#endif
-        Event.ev_mod(&cfg->event_loop, ev, EVENT_READ);
-    return EXIT_SUCCESS;
-}
 static int client_error(ev_event_t *ev)
 {
     inner_log(ALERT, "client error. close it %d (%d)",AsyncSocket.check(ev->fd), ev->fd);
@@ -37,6 +15,30 @@ static int client_error(ev_event_t *ev)
     mem_free(peer);
     return EXIT_SUCCESS;
 }
+
+static int client_writer(ev_event_t *ev)
+{
+    peer_t *peer = Event.ev_get_ctx(ev);
+    connection_t *c = &peer->c;
+    conf_t *cfg = AsyncSocket.get_ctx(c);
+    //tundev_t *tdev = cfg->tdev;
+#ifdef HAVE_TLS
+    if(!c->handshaked)
+    {
+        if(EXIT_SUCCESS != tls_handshake(c))
+            return client_error(ev); /*EXIT_FAILURE, so close, delete peer*/
+        if(c->handshaked)
+        {
+            inner_log(INFO, "SSL handshake OK %s(%X:%d) %d", peer->nodename, getpeer_ip(peer), getpeer_port(peer), AsyncSocket.getfd(&peer->c));
+            //dump_peer(stderr, c);
+        }
+    }
+    else
+#endif
+        Event.ev_mod(&cfg->event_loop, ev, EVENT_READ);
+    return EXIT_SUCCESS;
+}
+
 static int client_reader(ev_event_t *ev)
 {
     l2switch_pkt_t vpkt;
@@ -52,7 +54,7 @@ static int client_reader(ev_event_t *ev)
     if(!c->handshaked)
     {
         if(EXIT_SUCCESS != tls_handshake(c))
-            return EXIT_FAILURE;
+            return client_error(ev); /*EXIT_FAILURE, so close, delete peer*/
         if(c->handshaked)
         {
             inner_log(INFO, "SSL handshake OK %s(%X:%d) %d", peer->nodename, getpeer_ip(peer), getpeer_port(peer), AsyncSocket.getfd(&peer->c));
@@ -63,13 +65,13 @@ static int client_reader(ev_event_t *ev)
     while(1)
     {
         if (AsyncSocket.read(c) < 0)
-            return EXIT_FAILURE;
+            return client_error(ev); /*EXIT_FAILURE, so close, delete peer*/
         if((n = AsyncSocket.peekbuf(c, &buf))<MVPN_HDR_LEN) /*min size of cfg_pkt_t*/
             return EXIT_SUCCESS;
         if(!dec_l2switch_hdr(buf, &vpkt.hdr))
         {
             inner_log(ALERT, "check vmpn header failed (%d) = %Zu (%02x%02x%02x%02x)", AsyncSocket.getfd(c), n, *buf, *(buf+1), *(buf+2), *(buf+3));
-            return EXIT_FAILURE;
+            return client_error(ev); /*EXIT_FAILURE, so close, delete peer*/
         }
         if(vpkt.hdr.len + MVPN_HDR_LEN > n)
             return EXIT_SUCCESS;
