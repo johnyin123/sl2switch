@@ -77,13 +77,16 @@ static int client_reader(ev_event_t *ev)
             return EXIT_SUCCESS;
         /* a package in socket buf */
         AsyncSocket.getbuf(c, (char *)&vpkt, vpkt.hdr.len + MVPN_HDR_LEN);
-        if(is_arp(&vpkt.ethpkt))
+        //if(is_arp(&vpkt.ethpkt)) /* ipv6 用的ICMPv6 type 135和type=136来替代IPv4的ARP*/
         {
             smac = mac_src(&vpkt.ethpkt);
             /*Ethernet 交换机是根据Ethernet包中的源MAC地址来更新“MAC地址—端口号表*/
-            inner_log(DEBUG, "ARP: update %Zx to %Zx peer %s(%X:%d)%s", smac, peer->mac, peer->nodename, getpeer_ip(peer), getpeer_port(peer), ((peer->mac)&&(peer->mac != smac)) ? "Changed!!!" : "");
-            peer->last_seen = time(NULL);
-            peer->mac = smac;
+            if(peer->mac != smac)
+            {
+                inner_log(DEBUG, "MAC_ADDRESS: update %Zx to %Zx peer %s(%X:%d) changed!!", smac, peer->mac, peer->nodename, getpeer_ip(peer), getpeer_port(peer));
+                peer->last_seen = time(NULL);
+                peer->mac = smac;
+            }
         }
         n = Tun.write(tdev, (char *)&vpkt.ethpkt, vpkt.hdr.len);
     }
