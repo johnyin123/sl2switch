@@ -219,23 +219,22 @@ static ssize_t async_getbuf(connection_t *c, char *buf, int nbyte)
 
 static ssize_t async_write(connection_t *c, const void *buf, size_t nbyte)
 {
-    int n;
-loop:
-#ifdef HAVE_TLS
-    if (c->tls_ctx && c->tls)
-        n = tls_send(c, buf, nbyte);
-    else
-#endif
-        n = write(c->sock, buf, nbyte);
-    sock_inner_log(DEBUG, "async_write: peer closed");
-    if (n < 0)
+    int i, nwrite;
+    for (i=0, nwrite=0; i<nbyte; i += nwrite)
     {
-        if ((errno == EINTR) || (errno == EAGAIN))
-            goto loop;
-        sock_inner_log(DEBUG, "async_write: peer closed");
-        return n;
+        /* write might not take it all in one call,
+         * so we have to try until it's all written
+         */
+#ifdef HAVE_TLS
+        if (c->tls_ctx && c->tls)
+            nwrite = tls_send(c, buf, nbyte);
+        else
+#endif
+            nwrite = write(c->sock, buf, nbyte);
+        if(nwrite < 0)
+            return nwrite; 
     }
-    return n;
+    return nbyte;
 }
 
 #define INIT_CONN(c) do { assert(c); memset(c, 0, sizeof(connection_t)); }while(0)
