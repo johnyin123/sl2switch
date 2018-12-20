@@ -105,22 +105,14 @@ static int tls_connect(connection_t *c)    /*like tls_accept */
     return tls_handshake(c);
 }
 
-ssize_t tls_recv(connection_t *c, void *buf, int len)
+static ssize_t tls_recv(connection_t *c, void *buf, int len)
 {
-    int rv = SSL_read(c->tls, buf, len);
-    if (rv > 0)
-        return rv;
-    sock_inner_log(DEBUG, "SSL_read(%d, %d) rv = %d,ssl_err=%d, errno=%d", c->sock, len, rv, SSL_get_error(c->tls, rv), errno);
-    return -1;
+    return SSL_read(c->tls, buf, len);
 }
 
 static int tls_send(connection_t *c, const void *buf, int len)
 {
-    int rv = SSL_write(c->tls, buf, len);
-    if (rv > 0)
-        return rv;
-    sock_inner_log(DEBUG, "SSL_write(%d) rv = %d, ssl_err=%d, %s", c->sock, rv, SSL_get_error(c->tls, rv), strerror(errno));
-    return rv;
+    return SSL_write(c->tls, buf, len);
 }
 #endif
 static int async_getfd(connection_t *c)
@@ -198,7 +190,7 @@ loop:
             return c->nbytes;
         }
         sock_inner_log(DEBUG, "async_read: peer closed");
-        return -1;
+        return n;
     }
     sock_inner_log(DEBUG, "errno = %d, async_read(%x) = %Zd", errno, c->sock, c->nbytes);
     return c->nbytes>0 ? c->nbytes : -1;/*may be a part of date arrived */
@@ -228,25 +220,21 @@ static ssize_t async_getbuf(connection_t *c, char *buf, int nbyte)
 static ssize_t async_write(connection_t *c, const void *buf, size_t nbyte)
 {
     int n;
-    for (;;)
-    {
+loop:
 #ifdef HAVE_TLS
-        if (c->tls_ctx && c->tls)
-            n = tls_send(c, buf, nbyte);
-        else
+    if (c->tls_ctx && c->tls)
+        n = tls_send(c, buf, nbyte);
+    else
 #endif
-            n = write(c->sock, buf, nbyte);
-        if (n == 0)
-        {
-            sock_inner_log(DEBUG, "async_write: peer closed");
-            return -1;
-        }
-        if (errno == EINTR)
-            continue;
-        sock_inner_log(DEBUG, "async_write(%x, %p, %zu) = %d", c->sock, buf, nbyte, n);
+        n = write(c->sock, buf, nbyte);
+    sock_inner_log(DEBUG, "async_write: peer closed");
+    if (n < 0)
+    {
+        if ((errno == EINTR) || (errno == EAGAIN))
+            goto loop;
+        sock_inner_log(DEBUG, "async_write: peer closed");
         return n;
     }
-    sock_inner_log(DEBUG, "async_write(%x, %p, %zu) = %d", c->sock, buf, nbyte, n);
     return n;
 }
 
