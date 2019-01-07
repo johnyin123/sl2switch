@@ -2,12 +2,12 @@
 # ip link set $IFNAME address $MAC mtu $MTU up
 ip link set $IFNAME mtu $MTU up
 
-[ $NODENAME = gvpe-dl ] && (ip -6 addr add FEC0::1/120 dev $IFNAME && ip addr add 172.16.168.1 dev $IFNAME)
-[ $NODENAME = gvpe-bj ] && (ip -6 addr add FEC0::2/120 dev $IFNAME && ip addr add 172.16.168.2 dev $IFNAME)
-[ $NODENAME = vps ]     && (ip -6 addr add FEC0::3/120 dev $IFNAME && ip addr add 172.16.168.3 dev $IFNAME)
-[ $NODENAME = home ]    && (ip -6 addr add FEC0::4/120 dev $IFNAME && ip addr add 172.16.168.4 dev $IFNAME)
-[ $NODENAME = asus ]    && (ip -6 addr add FEC0::5/120 dev $IFNAME && ip addr add 172.16.168.5 dev $IFNAME)
-[ $NODENAME = laptop ]  && (ip -6 addr add FEC0::6/120 dev $IFNAME && ip addr add 172.16.168.6 dev $IFNAME)
+[ $NODENAME = gvpe-dl ] && (ip -6 addr add 2607:fcd0:1000:1a00:1111:2222:3333:1/120 dev $IFNAME && ip addr add 172.16.168.1 dev $IFNAME)
+[ $NODENAME = gvpe-bj ] && (ip -6 addr add 2607:fcd0:1000:1a00:1111:2222:3333:2/120 dev $IFNAME && ip addr add 172.16.168.2 dev $IFNAME)
+[ $NODENAME = vps ]     && (ip -6 addr add 2607:fcd0:1000:1a00:1111:2222:3333:3/120 dev $IFNAME && ip addr add 172.16.168.3 dev $IFNAME)
+[ $NODENAME = home ]    && (ip -6 addr add 2607:fcd0:1000:1a00:1111:2222:3333:4/120 dev $IFNAME && ip addr add 172.16.168.4 dev $IFNAME)
+[ $NODENAME = asus ]    && (ip -6 addr add 2607:fcd0:1000:1a00:1111:2222:3333:5/120 dev $IFNAME && ip addr add 172.16.168.5 dev $IFNAME)
+[ $NODENAME = laptop ]  && (ip -6 addr add 2607:fcd0:1000:1a00:1111:2222:3333:6/120 dev $IFNAME && ip addr add 172.16.168.6 dev $IFNAME)
 ip -6 route add FEC0::0/120 dev $IFNAME
 ip route add 172.16.168.0/24 dev $IFNAME
 # iptables -t nat -A POSTROUTING -j MASQUERADE

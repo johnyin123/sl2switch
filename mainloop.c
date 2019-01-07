@@ -269,7 +269,7 @@ static int l2switch_timer(ev_event_t *ev)
                         inner_log(ERROR, "incoming set_nodelay error(%d) %s", errno, strerror(errno));
                     }
                     AsyncSocket.set_ctx(c, cfg);
-                    if(Peer.addpeer(&cfg->event_loop, &cfg->peers, "outgoing", peer, client_reader, client_writer, client_error, EVENT_RW) == EXIT_SUCCESS)
+                    if(Peer.addpeer(&cfg->event_loop, &cfg->peers, "outgoing", peer, client_reader, client_writer, client_error, EVENT_WRITE) == EXIT_SUCCESS)
                     {
                         continue;
                     }
