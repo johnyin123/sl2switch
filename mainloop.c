@@ -16,7 +16,7 @@ static int client_error(ev_event_t *ev)
     return EXIT_SUCCESS;
 }
 
-static int client_writer(ev_event_t *ev)
+static int on_connected(ev_event_t *ev)
 {
     peer_t *peer = Event.ev_get_ctx(ev);
     connection_t *c = &peer->c;
@@ -33,9 +33,8 @@ static int client_writer(ev_event_t *ev)
             //dump_peer(stderr, c);
         }
     }
-    else
 #endif
-        Event.ev_mod(&cfg->event_loop, ev, EVENT_READ);
+    Event.ev_mod(&cfg->event_loop, ev, EVENT_READ);
     return EXIT_SUCCESS;
 }
 
@@ -269,7 +268,7 @@ static int l2switch_timer(ev_event_t *ev)
                         inner_log(ERROR, "incoming set_nodelay error(%d) %s", errno, strerror(errno));
                     }
                     AsyncSocket.set_ctx(c, cfg);
-                    if(Peer.addpeer(&cfg->event_loop, &cfg->peers, "outgoing", peer, client_reader, client_writer, client_error, EVENT_WRITE) == EXIT_SUCCESS)
+                    if(Peer.addpeer(&cfg->event_loop, &cfg->peers, "outgoing", peer, client_reader, on_connected, client_error, EVENT_RW) == EXIT_SUCCESS)
                     {
                         continue;
                     }
