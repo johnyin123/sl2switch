@@ -4,6 +4,7 @@
 struct mmap_operator
 {
     void *(*create  )(size_t size);
+    void  (*destroy )(void *map);
     void *(*alloc   )(void *map, size_t size);
     void *(*calloc  )(void *map, size_t size);
     void  (*free    )(void *map, void *ptr);

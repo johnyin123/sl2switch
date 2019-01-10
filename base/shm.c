@@ -139,6 +139,13 @@ static void *mmap_create(size_t size)
     return (shmem);
 }
 
+static void mmap_destroy(void *map)
+{
+    mem_t *mem = (mem_t *) map;
+    size_t size = mem->end_ptr - map;
+    munmap(map, size);
+}
+
 static void *get_allocable_page(void *map, size_t page_size, size_t size)
 {
     mem_t *mem = (mem_t *) map;
@@ -231,6 +238,7 @@ static void dump_mem_info(FILE *fp, void *map)
 struct mmap_operator Mmap =
 {
     .create = mmap_create,
+    .destroy= mmap_destroy,
     .alloc  = mmap_alloc,
     .calloc = mmap_calloc, 
     .free   = mmap_free, 
