@@ -14,6 +14,7 @@ typedef struct data_t
 
 typedef struct mem_t
 {
+    int mem_type;
     struct data_t *data;
     void *end_ptr;
     struct mem_t *next;
@@ -28,7 +29,7 @@ static void *alloc_mmap_start(mem_t *mem, size_t size)
     new_node.next = NULL;
     mem->data = (void *)mem + sizeof(mem_t);
     memcpy((void *)mem + sizeof(mem_t), &new_node, sizeof(data_t));
-    return (new_node.data);
+    return new_node.data;
 }
 
 static data_t *get_last_node(void *map)
@@ -36,7 +37,7 @@ static data_t *get_last_node(void *map)
     data_t *tmp = ((mem_t *) map)->data;
     while (tmp->next != NULL)
         tmp = tmp->next;
-    return (tmp);
+    return tmp;
 }
 
 static size_t get_mmap_total_size(void *map)
@@ -48,7 +49,7 @@ static size_t get_mmap_total_size(void *map)
         total_size += sizeof(data_t) + tmp->data_size;
         tmp = tmp->next;
     }
-    return (total_size);
+    return total_size;
 }
 
 static void *alloc_new_node(void *map, size_t size)
@@ -61,7 +62,7 @@ static void *alloc_new_node(void *map, size_t size)
     new_node.next = NULL;
     memcpy(map + count, &new_node, sizeof(data_t));
     get_last_node(map)->next = map + count;
-    return (new_node.data);
+    return new_node.data;
 }
 
 static data_t *find_free_node(data_t *data, size_t size)
@@ -70,10 +71,10 @@ static data_t *find_free_node(data_t *data, size_t size)
     while (tmp != NULL)
     {
         if (tmp->data == NULL && tmp->data_size >= size)
-            return (tmp);
+            return tmp;
         tmp = tmp->next;
     }
-    return (NULL);
+    return NULL;
 }
 
 static void *get_next_alloc_space(void *map, size_t size)
@@ -81,7 +82,7 @@ static void *get_next_alloc_space(void *map, size_t size)
     data_t *tmp;
     data_t new_node;
     if ((tmp = find_free_node(((mem_t *) map)->data, size)) == NULL)
-        return (alloc_new_node(map, size));
+        return alloc_new_node(map, size);
     if (tmp->data_size >= size + sizeof(data_t))
     {
         new_node.data_size = tmp->data_size - size - sizeof(data_t);
@@ -92,7 +93,7 @@ static void *get_next_alloc_space(void *map, size_t size)
         memcpy((void *)tmp + size + sizeof(data_t), &new_node, sizeof(data_t));
     }
     tmp->data = (void *)tmp + sizeof(data_t);
-    return (tmp->data);
+    return tmp->data;
 }
 
 static size_t get_new_mmap_size(data_t *data)
@@ -104,7 +105,7 @@ static size_t get_new_mmap_size(data_t *data)
         size += sizeof(data_t) + data->data_size;
         data = data->next;
     }
-    return (size);
+    return size;
 }
 
 static void *get_new_next_ptr(data_t *data)
@@ -113,10 +114,10 @@ static void *get_new_next_ptr(data_t *data)
     while (data != NULL)
     {
         if (data->data != NULL)
-            return (data);
+            return data;
         data = data->next;
     }
-    return (NULL);
+    return NULL;
 }
 
 static void *get_mmap_data_from_ptr(void *map, void *ptr)
@@ -125,25 +126,38 @@ static void *get_mmap_data_from_ptr(void *map, void *ptr)
     data_t *tmp;
     for (tmp = mem->data; tmp != NULL; tmp = tmp->next)
         if (tmp->data == ptr)
-            return (tmp);
-    return (NULL);
+            return tmp;
+    return NULL;
 }
 
-static void *mmap_create(size_t size)
+static void *mmap_create(int mem_type, size_t size)
 {
-    int protection = PROT_READ | PROT_WRITE;
-    int visibility = MAP_ANONYMOUS | MAP_SHARED;
-    void *shmem = mmap(NULL, size, protection, visibility, -1, 0);
-    mem_t mem = { NULL, shmem + size, NULL };
-    memcpy(shmem, &mem, sizeof(mem_t));
-    return (shmem);
+    void *ptr; 
+    if(mem_type == MEM_MMAP)
+    {
+        ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    }
+    else/* if(mem_type == MEM_PRIV) */
+    {
+        ptr = malloc(size);
+    }
+    mem_t mem = { mem_type, NULL, ptr + size, NULL };
+    memcpy(ptr, &mem, sizeof(mem_t));
+    return ptr;
 }
 
 static void mmap_destroy(void *map)
 {
     mem_t *mem = (mem_t *) map;
     size_t size = mem->end_ptr - map;
-    munmap(map, size);
+    if(mem->mem_type == MEM_MMAP)
+    {
+        munmap(map, size);
+    }
+    else/* if(mem->mem_type == MEM_PRIV) */
+    {
+        free(map);
+    }
 }
 
 static void *get_allocable_page(void *map, size_t page_size, size_t size)
@@ -160,7 +174,7 @@ static void *get_allocable_page(void *map, size_t page_size, size_t size)
         mem = tmp;
         tmp = tmp->next;
     }
-    tmp = mmap_create((page_size >= sizeof(mem_t) + sizeof(data_t) + size) ? page_size : sizeof(mem_t) + sizeof(data_t) + size);
+    tmp = mmap_create(mem->mem_type, (page_size >= sizeof(mem_t) + sizeof(data_t) + size) ? page_size : sizeof(mem_t) + sizeof(data_t) + size);
     mem->next = (void *)tmp;
     return (tmp);
 }
@@ -178,7 +192,6 @@ static void remap_mmap_free(void *map)
         }
     }
 }
-
 
 static void *mmap_alloc(void *map, size_t size)
 {
