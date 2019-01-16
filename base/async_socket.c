@@ -286,11 +286,7 @@ static int async_accept(connection_t *srv, connection_t *c)
     if (srv->tls_ctx)
     {
         set_tls_ctx(c, srv->tls_ctx);
-        if (tls_accept(c) == EXIT_FAILURE)
-        {
-            async_close(c);
-            return EXIT_FAILURE;
-        }
+        return tls_accept(c);
     }
 #endif
     return EXIT_SUCCESS;
