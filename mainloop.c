@@ -221,8 +221,8 @@ static int accept_reader(ev_event_t *ev)
             return EXIT_SUCCESS;
         }
     }
-    /* delete peer from list */
-    Peer.delpeer(&cfg->event_loop, peer);
+    /* close this socket, and connection not in peerlist */
+    AsyncSocket.close(&peer->c);
     mem_free(peer);
     return EXIT_FAILURE;
 }
